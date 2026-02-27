@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lexical Decision Task</title>
+    <script src="https://unpkg.com/jspsych@8.2.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
+    <link href="https://unpkg.com/jspsych@8.2.2/css/jspsych.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body></body>
+  <script>
+
+    /* initialize jsPsych */
+    var jsPsych = initJsPsych({
+      on_finish: function() {
+        jsPsych.data.displayData();
+      }
+    });
+
+    /* create timeline */
+    var timeline = [];
+
+    /* define welcome message trial */
+    var welcome = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: "Welcome to the experiment. Press any key to begin."
+    };
+    timeline.push(welcome);
+
+    /* define instructions trial */
+    var instructions = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+        <p>Welcome to the experiment!</p>
+        <p>In this task, you will see a string of letters appear on the screen.</p>
+        <p>Your job is to decide, as quickly and accurately as possible, whether the letters form a real English word or not a real word.</p>
+        <p>If the letters form a real word (e.g. BANANA), press the "F" key on your keyboard.</p>
+        <p>If the letters do not form a real word (e.g. NABNAA), press the "J" key on your keyboard.</p>
+        <p>We will start with a few practice trials to make sure you understand the task.</p>
+        <p>Press any key to begin.</p>
+      `,
+      post_trial_gap: 2000
+    };
+    timeline.push(instructions);
+
+    /* stimuli */
+    const stimuli = [
+      { word: 'APPLE',  type: 'word',    correct_key: 'f' },
+      { word: 'RIVER',  type: 'word',    correct_key: 'f' },
+      { word: 'CHAIR',  type: 'word',    correct_key: 'f' },
+      { word: 'BREAD',  type: 'word',    correct_key: 'f' },
+      { word: 'CLOUD',  type: 'word',    correct_key: 'f' },
+      { word: 'STONE',  type: 'word',    correct_key: 'f' },
+      { word: 'PLANT',  type: 'word',    correct_key: 'f' },
+      { word: 'LIGHT',  type: 'word',    correct_key: 'f' },
+      { word: 'GRASS',  type: 'word',    correct_key: 'f' },
+      { word: 'FLAME',  type: 'word',    correct_key: 'f' },
+      { word: 'HOLSE',  type: 'nonword', correct_key: 'j' },
+      { word: 'FRANT',  type: 'nonword', correct_key: 'j' },
+      { word: 'SLOME',  type: 'nonword', correct_key: 'j' },
+      { word: 'TRISK',  type: 'nonword', correct_key: 'j' },
+      { word: 'WAVEL',  type: 'nonword', correct_key: 'j' },
+      { word: 'PLORF',  type: 'nonword', correct_key: 'j' },
+      { word: 'GRENT',  type: 'nonword', correct_key: 'j' },
+      { word: 'CHAVE',  type: 'nonword', correct_key: 'j' },
+      { word: 'SNULD',  type: 'nonword', correct_key: 'j' },
+      { word: 'DRIPE',  type: 'nonword', correct_key: 'j' },
+    ];
+
+    const practice_stimuli = stimuli.slice(0, 3).concat(stimuli.slice(10, 13));
+    const main_stimuli = stimuli;
+
+    /* fixation cross */ 
+    var fixation = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '<div style="font-size: 48px; text-align: center;">+</div>',
+      choices: 'NO_KEYS',
+      trial_duration: function() {
+        return jsPsych.randomization.sampleWithoutReplacement([500, 750, 1000], 1)[0];
+      }
+    };
+
+    /* stimulus */
+    var stimulus = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function() {
+        return `<div style="font-size: 48px; text-align: center;">
+                  ${jsPsych.evaluateTimelineVariable('word')}
+                </div>`;
+      },
+      choices: ['f', 'j'],
+      trial_duration: 2000,
+      response_ends_trial: true,
+      data: {
+        task: 'ldt',
+        word_type: jsPsych.timelineVariable('type'),
+        correct_key: jsPsych.timelineVariable('correct_key')
+      },
+      on_finish: function(data) {
+      data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_key);
+    }
+  };
+
+    /* feedback for practice trials */
+    var feedback = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: function() {
+        const last = jsPsych.data.get().last(1).values()[0];
+        if (last.response === null)
+          return '<div style="font-size: 32px; color: red;">Too slow!</div>';
+        if (last.correct)
+          return '<div style="font-size: 32px; color: green;">Correct!</div>';
+        return '<div style="font-size: 32px; color: red;">Incorrect</div>';
+      },
+      choices: 'NO_KEYS',
+      trial_duration: 700
+    };  
+
+    /* inter trial interval */
+    var iti = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '',
+      choices: 'NO_KEYS',
+      trial_duration: 500
+    };
+
+    /* practice trial */
+    const practice_procedure = {
+      timeline: [fixation, stimulus, feedback, iti],
+      timeline_variables: practice_stimuli,
+      randomize_order: true
+    };
+    timeline.push(practice_procedure);
+
+    /* after practice trials */
+    const after_practice = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+        <div style="font-size: 18px; text-align: center;">
+          <p>Great job! The practice is now over.</p>
+          <p>The main experiment will begin now. There will be no feedback this time.</p>
+          <p>Press any key to begin.</p>
+        </div>
+      `,
+      choices: 'ALL_KEYS'
+    };
+    timeline.push(after_practice);
+
+    /* main trial */
+    const main_procedure = {
+      timeline: [fixation, stimulus, iti],
+      timeline_variables: main_stimuli,
+      randomize_order: true
+    };
+    timeline.push(main_procedure);
+
+    jsPsych.run(timeline)
+
+  </script>
+</html>
